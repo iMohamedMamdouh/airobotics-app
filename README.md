@@ -22,7 +22,7 @@
 1. ادخل على <https://console.firebase.google.com> واعمل مشروع جديد (مثلاً `airobotics-horus`).
 2. من القائمة: **AI Logic** ← **Get started** ← اختار **Gemini Developer API** (فيه باقة مجانية).
 3. من **Project settings** ← **Your apps** ← **Add app** ← **Android**:
-   - Package name: `com.airobotics.horus`
+   - Package name: `com.company.airobotics`
    - انزل الملف `google-services.json` (هنحتاج منه أرقام بس، مش هنحطه في المشروع).
 4. من الملف ده خد القيم دي:
 
@@ -33,7 +33,17 @@
 | `FIREBASE_MESSAGING_SENDER_ID` | `project_info.project_number` |
 | `FIREBASE_PROJECT_ID` | `project_info.project_id` |
 
-### 2) ملف البيانات السرية
+### 2) تفعيل App Check (إجباري)
+
+Firebase AI Logic بيرفض أي طلب مفيهوش App Check. علشان التطبيق بيتنزل على التابلت مباشرة مش من Google Play، بنستخدم **Debug token**:
+
+1. في Firebase Console ادخل **App Check** ← **Apps** ← التطبيق `com.company.airobotics`.
+2. من القائمة (⋮) اختار **Manage debug tokens** ← **Add debug token**.
+3. حط نفس القيمة اللي في `APP_CHECK_DEBUG_TOKEN` في ملف `config/secrets.json` واحفظ.
+
+> ماتنشرش الـ debug token ده، لأن أي حد معاه يقدر يستخدم Gemini على حسابك. لو اتسرب امسحه من Console واعمل واحد جديد.
+
+### 3) ملف البيانات السرية
 
 ```bash
 cp config/secrets.example.json config/secrets.json
@@ -42,7 +52,7 @@ cp config/secrets.example.json config/secrets.json
 
 الملف `config/secrets.json` مش بيترفع على GitHub (موجود في `.gitignore`).
 
-### 3) التشغيل على التابلت
+### 4) التشغيل على التابلت
 
 ```bash
 flutter pub get
@@ -72,7 +82,6 @@ flutter build apk --release --dart-define-from-file=config/secrets.json
 
 - **الصدى:** لو السماعة عالية وحورس بيسمع صوته ويقاطع نفسه، سيب اختيار "يسمح للزائر يقاطع حورس" مقفول (ده الافتراضي). كده الميكروفون بيقفل وحورس بيتكلم.
 - **Kiosk كامل:** علشان الزائر مايقدرش يخرج من التطبيق، فعّل **Screen pinning** من إعدادات Android (Security ← App pinning).
-- **الأمان قبل الاستخدام الفعلي:** فعّل **Firebase App Check** (Play Integrity) علشان محدش يستخدم الـ API key بتاعك من برة التطبيق.
 
 ## هيكل المشروع
 

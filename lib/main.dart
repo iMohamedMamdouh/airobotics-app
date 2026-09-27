@@ -1,3 +1,4 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +27,12 @@ Future<void> main() async {
         messagingSenderId: AppConfig.firebaseMessagingSenderId,
         projectId: AppConfig.firebaseProjectId,
       ),
+    );
+    // Firebase AI Logic rejects requests without a valid App Check token.
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: AppConfig.appCheckDebugToken.isNotEmpty
+          ? const AndroidDebugProvider(debugToken: AppConfig.appCheckDebugToken)
+          : const AndroidPlayIntegrityProvider(),
     );
     controller = HorusController(settingsStore: SettingsStore());
     await controller.init();

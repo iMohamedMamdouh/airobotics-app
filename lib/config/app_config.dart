@@ -14,6 +14,13 @@ class AppConfig {
     'FIREBASE_PROJECT_ID',
   );
 
+  /// App Check debug token registered in Firebase Console (App Check → Apps →
+  /// Manage debug tokens). Used because the robot's APK is side-loaded, not
+  /// installed from Google Play. Leave empty to use Play Integrity instead.
+  static const appCheckDebugToken = String.fromEnvironment(
+    'APP_CHECK_DEBUG_TOKEN',
+  );
+
   /// Gemini Live model with native audio output. Can be overridden without
   /// code changes when Google releases a newer model.
   static const geminiLiveModel = String.fromEnvironment(
