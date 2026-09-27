@@ -51,6 +51,8 @@ class AudioOutput {
     final handle = _handle;
     _stream = null;
     _handle = null;
+    // Nothing was ever played: don't touch the audio engine at all.
+    if (stream == null && handle == null) return;
     if (!SoLoud.instance.isInitialized) return;
     if (handle != null && SoLoud.instance.getIsValidVoiceHandle(handle)) {
       await SoLoud.instance.stop(handle);
