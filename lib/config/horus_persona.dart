@@ -36,5 +36,5 @@ $companyInfo
   /// Sent as a hidden prompt when a visitor starts a conversation, so Horus
   /// speaks first.
   static const greetingPrompt =
-      '(رسالة من النظام: زائر جديد ضغط علشان يكلمك. رحّب بيه وعرّف نفسك في جملة واحدة قصيرة واسأله تحب أساعدك في إيه.)';
+      '[زائر جديد وصل] رحّب بيه وعرّف نفسك في جملة واحدة واسأله تحب أساعدك في إيه.';
 }

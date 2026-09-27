@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io';
 
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/foundation.dart';
@@ -44,6 +45,9 @@ class HorusController extends ChangeNotifier {
 
   String? errorMessage;
 
+  /// Technical error text shown in small print, to help diagnose problems.
+  String? errorDetail;
+
   /// Mic loudness 0..1, for the listening animation.
   final ValueNotifier<double> micLevel = ValueNotifier(0);
 
@@ -60,6 +64,9 @@ class HorusController extends ChangeNotifier {
   DateTime? _thinkingSince;
   bool _disposed = false;
   int _sessionGeneration = 0;
+  DateTime _connectedAt = DateTime.now();
+  bool _receivedContent = false;
+  int _quickCloses = 0;
 
   bool get isActive => state != HorusState.idle && state != HorusState.error;
 
@@ -99,6 +106,8 @@ class HorusController extends ChangeNotifier {
   Future<void> start() async {
     if (isActive) return;
     errorMessage = null;
+    errorDetail = null;
+    _quickCloses = 0;
     userText = '';
     horusText = '';
     _setState(HorusState.connecting);
@@ -110,14 +119,22 @@ class HorusController extends ChangeNotifier {
 
     try {
       await _connect();
+    } catch (e) {
+      developer.log('Failed to connect', error: e);
+      await _teardown();
+      _fail(_describeConnectionError(e), detail: e);
+      return;
+    }
+
+    try {
       await _input.start(
         onData: _onMicData,
         onLevel: (level) => micLevel.value = level,
       );
     } catch (e) {
-      developer.log('Failed to start conversation', error: e);
+      developer.log('Failed to start microphone', error: e);
       await _teardown();
-      _fail('مش قادر أتصل دلوقتي. اتأكد من الإنترنت وجرب تاني.');
+      _fail('مش قادر أشغّل الميكروفون.', detail: e);
       return;
     }
 
@@ -127,7 +144,11 @@ class HorusController extends ChangeNotifier {
     if (settings.greetOnStart) {
       _turnComplete = false;
       _setState(HorusState.thinking);
-      await _session?.sendTextRealtime(HorusPersona.greetingPrompt);
+      try {
+        await _session?.sendTextRealtime(HorusPersona.greetingPrompt);
+      } catch (e) {
+        developer.log('Failed to send greeting', error: e);
+      }
     } else {
       _setState(HorusState.listening);
     }
@@ -151,6 +172,8 @@ class HorusController extends ChangeNotifier {
       );
     }
     _session = session;
+    _connectedAt = DateTime.now();
+    _receivedContent = false;
     unawaited(_receiveLoop(session, generation));
   }
 
@@ -228,10 +251,30 @@ class HorusController extends ChangeNotifier {
     } catch (e) {
       developer.log('Live session error', error: e);
     }
-    // The socket closed on its own (network drop, server limit, ...).
-    if (generation == _sessionGeneration && isActive) {
-      await _reconnect();
+    if (generation != _sessionGeneration || !isActive) return;
+
+    // The socket closed on its own. Find out why: receive() throws with the
+    // server's close code and reason once the socket is closed.
+    Object? reason;
+    try {
+      await session.receive().drain<void>();
+    } catch (e) {
+      reason = e;
     }
+    developer.log('Live session closed: $reason');
+
+    // A session the server closes right away (bad App Check token, unknown
+    // model, quota...) would fail again; stop instead of looping forever.
+    final quick =
+        !_receivedContent &&
+        DateTime.now().difference(_connectedAt) < const Duration(seconds: 10);
+    _quickCloses = quick ? _quickCloses + 1 : 0;
+    if (_quickCloses >= 2) {
+      await _teardown();
+      _fail(_describeConnectionError(reason), detail: reason);
+      return;
+    }
+    await _reconnect();
   }
 
   Future<void> _reconnect() async {
@@ -268,6 +311,8 @@ class HorusController extends ChangeNotifier {
   }
 
   void _handleContent(LiveServerContent content) {
+    _receivedContent = true;
+    _quickCloses = 0;
     final heard = content.inputTranscription?.text;
     if (heard != null && heard.trim().isNotEmpty) {
       if (_clearUserText) {
@@ -317,6 +362,8 @@ class HorusController extends ChangeNotifier {
     }
 
     if (content.turnComplete ?? false) {
+      // Turn ended without any audio (nothing to say): go back to listening.
+      if (state == HorusState.thinking) _setState(HorusState.listening);
       _turnComplete = true;
       _clearUserText = _clearHorusText = true;
       _dropAudioUntilNextTurn = false;
@@ -350,8 +397,28 @@ class HorusController extends ChangeNotifier {
 
   void _markActivity() => _lastActivity = DateTime.now();
 
-  void _fail(String message) {
+  String _describeConnectionError(Object? error) {
+    final text = '$error';
+    if (text.contains('App Check') || text.contains('app-check')) {
+      return 'فيه مشكلة في App Check. اتأكد إن الـ debug token متسجل في Firebase.';
+    }
+    if (text.contains('quota')) {
+      return 'خلصت الحصة المجانية بتاعة Gemini. جرب تاني بعد شوية.';
+    }
+    if (text.contains('not found') || text.contains('not supported')) {
+      return 'موديل Gemini ده مش متاح. غيّر GEMINI_LIVE_MODEL.';
+    }
+    if (error is SocketException ||
+        text.contains('SocketException') ||
+        text.contains('Failed host lookup')) {
+      return 'مفيش إنترنت. اتأكد إن الجهاز متوصل بالإنترنت وجرب تاني.';
+    }
+    return 'مش قادر أتصل بـ Gemini دلوقتي. جرب تاني.';
+  }
+
+  void _fail(String message, {Object? detail}) {
     errorMessage = message;
+    errorDetail = detail == null ? null : '$detail';
     micLevel.value = 0;
     _setState(HorusState.error);
   }
