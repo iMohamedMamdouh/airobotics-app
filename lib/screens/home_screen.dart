@@ -196,10 +196,28 @@ class _ConversationPanel extends StatelessWidget {
         ),
       );
     } else if (c.state == HorusState.error) {
-      body = Text(
-        c.errorMessage ?? 'حصلت مشكلة.',
-        textAlign: TextAlign.center,
-        style: textTheme.titleLarge?.copyWith(color: HorusColors.error),
+      body = SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              c.errorMessage ?? 'حصلت مشكلة.',
+              textAlign: TextAlign.center,
+              style: textTheme.titleLarge?.copyWith(color: HorusColors.error),
+            ),
+            if (c.errorDetail != null) ...[
+              const SizedBox(height: 12),
+              SelectableText(
+                c.errorDetail!,
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.ltr,
+                style: textTheme.bodySmall?.copyWith(
+                  color: HorusColors.textMuted,
+                ),
+              ),
+            ],
+          ],
+        ),
       );
     } else {
       body = SingleChildScrollView(
