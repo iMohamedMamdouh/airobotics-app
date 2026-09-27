@@ -95,7 +95,10 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             ),
             const Divider(height: 32),
             Text(
-              'الموديل: ${AppConfig.geminiLiveModel}\nمشروع Firebase: ${AppConfig.firebaseProjectId}',
+              'Model: ${AppConfig.geminiLiveModel}\n'
+              'Firebase project: ${AppConfig.firebaseProjectId}\n'
+              'API key: ${_mask(AppConfig.firebaseApiKey)}\n'
+              'App Check token: ${_mask(AppConfig.appCheckDebugToken)}',
               style: textTheme.bodySmall,
               textDirection: TextDirection.ltr,
             ),
@@ -104,4 +107,12 @@ class _SettingsSheetState extends State<_SettingsSheet> {
       ),
     );
   }
+}
+
+/// Shows only the ends of a secret, enough to spot a wrong value.
+String _mask(String value) {
+  if (value.length < 12) return value.isEmpty ? '(empty)' : '***';
+  final start = value.substring(0, 6);
+  final end = value.substring(value.length - 4);
+  return '$start...$end (${value.length} chars)';
 }
