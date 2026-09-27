@@ -45,12 +45,13 @@ Firebase AI Logic بيرفض أي طلب مفيهوش App Check. علشان ال
 
 ### 3) ملف البيانات السرية
 
+حط ملف `google-services.json` اللي نزلته من Firebase في `android/app/` (مش بيترفع على GitHub)، وبعدين شغّل:
+
 ```bash
-cp config/secrets.example.json config/secrets.json
-# افتح config/secrets.json واكتب القيم
+dart run tool/make_secrets.dart android/app/google-services.json <APP_CHECK_DEBUG_TOKEN>
 ```
 
-الملف `config/secrets.json` مش بيترفع على GitHub (موجود في `.gitignore`).
+السكريبت بيعمل `config/secrets.json` لوحده من غير ما تنسخ أي مفتاح بإيدك. لو ماكتبتش الـ token، هيعمل واحد جديد ويطبعه علشان تسجله في App Check.
 
 ### 4) التشغيل على التابلت
 

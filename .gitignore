@@ -46,3 +46,6 @@ app.*.map.json
 
 # Firebase keys (copy config/secrets.example.json)
 config/secrets.json
+
+# Firebase config downloaded from the console
+android/app/google-services.json
