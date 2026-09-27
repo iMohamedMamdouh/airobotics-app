@@ -1,4 +1,4 @@
-package com.example.airobotics_app
+package com.company.airobotics
 
 import io.flutter.embedding.android.FlutterActivity
 
